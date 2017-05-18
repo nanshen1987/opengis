@@ -54,9 +54,9 @@ public class Example {
     public static void main(String[] args) {
         SpringApplication springApplication = new SpringApplication(Example.class);
         springApplication.setBannerMode(Banner.Mode.OFF);
-        springApplication.addListeners(new CustApplicationEnvironmentPreparedEventListener(),
-                new CustApplicationPreparedEventListener(), new CustApplicationStartingEventListener(),
-                new CustApplicationReadyEventListener());
+//        springApplication.addListeners(new CustApplicationEnvironmentPreparedEventListener(),
+//                new CustApplicationPreparedEventListener(), new CustApplicationStartingEventListener(),
+//                new CustApplicationReadyEventListener());
         springApplication.run(args);
 
     }

@@ -6,7 +6,7 @@
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="https://openlayers.org/en/v4.1.1/build/ol.js"></script>
-    <script type="text/javascript" src="../js/lib/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="/js/lib/jquery-3.2.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.4.3/proj4.js"></script>
     <script src="https://epsg.io/21781-1753.js"></script>
 </head>
@@ -32,6 +32,14 @@
     .contextmenu > ul > li:hover{
         background-color: rgba(255, 0, 0, 0.5);
     }
+    .marker {
+        width: 20px;
+        height: 20px;
+        border: 1px solid #088;
+        border-radius: 10px;
+        background-color: #0FF;
+        opacity: 0.5;
+    }
 </style>
 
 <body>
@@ -42,9 +50,17 @@
         <li><a href="#">距离丈量</a></li>
     </ul>
 </div>
-
+<div >
+<div class="marker" title="Marker"></div>
+</div>
 <div id="map" class="map"></div>
 <div id="mouse-position"></div>
+<div>
+    <button onclick="addInteraction()">enable</button>
+    <button onclick="removeInteraction()">disable</button>
+    <button onclick="clearAll()">clearAll</button>
+    <label>名称：</label><input id="name"/>
+</div>
 <script>
 
     var mousePositionControl = new ol.control.MousePosition({
@@ -65,12 +81,12 @@
     var format = 'image/png';
 
     var layers = [
-//
+        vector,
 //        new ol.layer.Tile({
-//            source: new ol.source.OSM()
+//            source: new ol.source.OSM(),
+//            projection: 'EPSG:3785'
 //        })
 //        ,
-        vector,
         new ol.layer.Tile({
             visible: true,
             source: new ol.source.TileWMS({
@@ -115,7 +131,7 @@
         e.preventDefault();
         menu_overlay.setPosition(undefined);
     });
-    jQuery.support.cors = true;
+    var draw;
     function addInteraction() {
             draw = new ol.interaction.Draw({
                 source: source,
@@ -131,16 +147,45 @@
             var d=radius/1000;
             var lat=cvtPoint[1];
             var lng=cvtPoint[0];
-            var url='http://localhost:8983/solr/nanjing/select?d='+d+'&fq={!geofilt}&indent=on&pt='+lat+','+lng+'&q=*:*&sfield=geom&wt=json';
-            $.getJSON(url,
-                    {dataType: 'JSONP'},
+            $.getJSON("geoanalyzer/findloc",
+                    {
+                        loc:lat+","+lng,
+                        r:d,
+                        name:$('#name').val()
+                    },
                     function(json){
-                        console.log(json);
+                       for(var i=0;i<json.length; i++){
+                           var pt=json[i];
+                           console.log(pt.loc+","+pt.name);
+                           var x=pt.loc.split(",")[1];
+                           var y=pt.loc.split(",")[0];
+                           var loc=[x,y];
+                           addMarker(loc,pt.name,loc.id);
+                       }
                     }
             )
         })
     }
-    addInteraction();
+
+    function removeInteraction()
+    {
+        map.removeInteraction(draw);
+    }
+//    addInteraction();
+    function clearAll(){
+        source.clear();
+        map.getOverlays().clear();
+    }
+
+
+    function addMarker(loc,name,id){
+        var marker = new ol.Overlay({
+            element: $('<div class="marker" id="'+id+'" title="'+name+'"></div>')[0]
+        });
+        marker.setMap(map);
+        marker.setPosition(loc);
+        map.addOverlay(marker);
+    }
 </script>
 </body>
 </html>
