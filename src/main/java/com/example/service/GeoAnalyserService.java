@@ -2,7 +2,7 @@ package com.example.service;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.vividsolutions.jts.geom.Coordinate;
+import com.example.com.example.util.CoordinateConverter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -10,11 +10,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.geotools.geometry.jts.JTS;
-import org.geotools.referencing.CRS;
-import org.opengis.geometry.Geometry;
 import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 import org.springframework.stereotype.Service;
@@ -37,11 +33,13 @@ public class GeoAnalyserService {
         }else{
             query.setQuery("*:*");
         }
-        query.setFilterQueries("{!geofilt}");
-        query.set("pt", location);
-        query.set("sfield","geom");
+        if(!StringUtils.isEmpty(location)&&radius>0){
+            query.setFilterQueries("{!geofilt}");
+            query.set("pt", location);
+            query.set("sfield","geom");
+            query.set("d",radius+"");
+        }
         query.set("wt","json");
-        query.set("d",radius+"");
         QueryResponse response = solr.query(query);
         SolrDocumentList list = response.getResults();
         JSONArray result=new JSONArray();
@@ -51,23 +49,18 @@ public class GeoAnalyserService {
             String orginLocStr= (String) solrDocument.get("geom");
             // 投影转换
             MathTransform transform = null;
-            Coordinate target=new Coordinate();
+            double[] target={0,0};
             try {
-                CoordinateReferenceSystem  crsTarget = CRS.decode("EPSG:3785");
-                CoordinateReferenceSystem crsSource = CRS.decode("EPSG:4326");
-                transform = CRS.findMathTransform(crsSource, crsTarget);
-                Coordinate coordinate=new Coordinate(Double.parseDouble(orginLocStr.split(",")[0]),Double.parseDouble(orginLocStr.split(",")[1]));
-
-                JTS.transform(coordinate, target,transform);
+                target= CoordinateConverter.convertByEPSG(Double.parseDouble(orginLocStr.split(",")[0]),Double.parseDouble(orginLocStr.split(",")[1]),"EPSG:4326","EPSG:3857");
             } catch (FactoryException e) {
                 e.printStackTrace();
             } catch (TransformException e) {
                 e.printStackTrace();
             }
-            loc.put("loc",target.getOrdinate(1)+","+target.getOrdinate(0));
+            loc.put("loc",target[0]+","+target[1]);
             loc.put("id",solrDocument.get("id"));
             result.add(loc);
-            System.out.println(solrDocument.get("name") + "," + target.getOrdinate(1) + "," + target.getOrdinate(0));
+            System.out.println(solrDocument.get("name") + "," + target[0] + "," + target[1]);
             System.out.println(solrDocument.get("name")+","+orginLocStr);
         }
         return result;
