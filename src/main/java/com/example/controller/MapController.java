@@ -24,4 +24,22 @@ public class MapController {
         return "map/geoserver";
     }
 
+    @RequestMapping(value = "/openlayer/basic",method = RequestMethod.GET)
+    public String mapBasic()
+    {
+        return "map/openlayer/basic";
+    }
+    @RequestMapping(value = "/openlayer/raster",method = RequestMethod.GET)
+    public String mapRaster()
+    {
+        return "map/openlayer/raster";
+    }
+
+    @RequestMapping(value = "/openlayer/vector",method = RequestMethod.GET)
+    public String mapVector()
+    {
+        return "map/openlayer/vector";
+    }
+
+
 }
